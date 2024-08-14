@@ -33,7 +33,7 @@ public class ProcessUtils {
             if (exitValue == 0) {
                 System.out.println(opName + "成功");
                 // 分批获取进程的正常输出
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(runProcess.getInputStream()));
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(runProcess.getInputStream(), "gbk"));
                 List<String> outputStrList = new ArrayList<>();
                 // 逐行读取
                 String compileOutputLine;
@@ -45,7 +45,7 @@ public class ProcessUtils {
                 // 异常退出
                 System.out.println(opName + "失败，错误码： " + exitValue);
                 // 分批获取进程的正常输出
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(runProcess.getInputStream()));
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(runProcess.getInputStream(), "gbk"));
                 List<String> outputStrList = new ArrayList<>();
                 // 逐行读取
                 String compileOutputLine;
@@ -55,7 +55,7 @@ public class ProcessUtils {
                 executeMessage.setMessage(StringUtils.join(outputStrList, "\n"));
 
                 // 分批获取进程的错误输出
-                BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(runProcess.getErrorStream()));
+                BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(runProcess.getErrorStream(),"gbk"));
                 // 逐行读取
                 List<String> errorOutputStrList = new ArrayList<>();
                 // 逐行读取

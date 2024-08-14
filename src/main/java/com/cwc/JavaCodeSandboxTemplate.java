@@ -3,12 +3,13 @@ package com.cwc;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import com.cwc.exception.ExecuteException;
+import com.cwc.exception.JudgeInfoMessageEnum;
 import com.cwc.model.ExecuteCodeRequest;
 import com.cwc.model.ExecuteCodeResponse;
 import com.cwc.model.ExecuteMessage;
 import com.cwc.model.JudgeInfo;
 import com.cwc.utils.ProcessUtils;
-import com.cwc.utils.security.DenySecurityManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -28,7 +29,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     private static final String GLOBAL_JAVA_CLASS_NAME = "Main.java";
 
-    private static final long TIME_OUT = 5000;
+    private static final long TIME_OUT = 20000;
 
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
@@ -44,7 +45,6 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
         // 编译代码，得到class文件
         ExecuteMessage compileFileExecuteMessage = compileFile(userCodeFile);
-        System.out.println(compileFileExecuteMessage);
 
         // 执行代码,得到输出
         List<ExecuteMessage> executeMessages = runFile(userCodeFile, inputList);
@@ -64,6 +64,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 代码保存为文件
+     *
      * @param code
      * @return
      */
@@ -83,6 +84,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 编译代码
+     *
      * @param userCodeFile
      * @return
      */
@@ -92,17 +94,23 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             Process compileProcess = Runtime.getRuntime().exec(compileCmd);
             ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("编译", compileProcess);
             if (executeMessage.getExitValue() != 0) {
-                throw new RuntimeException("编译错误");
+                Long time = executeMessage.getTime();
+                JudgeInfo judgeInfo = new JudgeInfo();
+                judgeInfo.setTime(time);
+                judgeInfo.setMessage(JudgeInfoMessageEnum.COMPILE_ERROR.getValue());
+                throw new ExecuteException(judgeInfo, executeMessage.getErrorMessage());
             }
             return executeMessage;
         } catch (IOException e) {
-//            return getErrorResponse(e);
-            throw new RuntimeException(e);
+            JudgeInfo judgeInfo = new JudgeInfo();
+            judgeInfo.setMessage(JudgeInfoMessageEnum.RUNTIME_ERROR.getValue());
+            throw new ExecuteException(judgeInfo, e.getMessage());
         }
     }
 
     /**
      * 执行文件，获得输出
+     *
      * @param userCodeFile
      * @param inputList
      * @return
@@ -133,16 +141,19 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                             runProcess.destroy();
                         }
                     } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                        JudgeInfo judgeInfo = new JudgeInfo();
+                        judgeInfo.setMessage(JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED.getValue());
+                        judgeInfo.setTime(TIME_OUT);
+                        throw new ExecuteException(judgeInfo, JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED.getText());
                     }
                 }).start();
 
                 ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("运行", runProcess);
-                System.out.println(executeMessage);
                 executeMessageList.add(executeMessage);
             } catch (IOException e) {
-//                return getErrorResponse(e);
-                throw new RuntimeException("执行错误", e);
+                JudgeInfo judgeInfo = new JudgeInfo();
+                judgeInfo.setMessage(JudgeInfoMessageEnum.RUNTIME_ERROR.getValue());
+                throw new ExecuteException(judgeInfo, e.getMessage());
             }
         }
         return executeMessageList;
@@ -150,6 +161,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 整理搜集输出结果
+     *
      * @param executeMessageList
      * @return
      */
@@ -183,6 +195,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     /**
      * 文件清理
+     *
      * @param userCodeFile
      * @return
      */
@@ -194,20 +207,5 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             return del;
         }
         return true;
-    }
-
-    /**
-     * 获取错误响应
-     *
-     * @param e
-     * @return
-     */
-    private ExecuteCodeResponse getErrorResponse(Throwable e) {
-        ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        executeCodeResponse.setOutputList(new ArrayList<>());
-        executeCodeResponse.setMessage(e.getMessage());
-        executeCodeResponse.setStatus(2);
-        executeCodeResponse.setJudgeInfo(new JudgeInfo());
-        return executeCodeResponse;
     }
 }
