@@ -50,7 +50,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
         List<ExecuteMessage> executeMessages = runFile(userCodeFile, inputList);
 
         // 搜集输出
-        ExecuteCodeResponse outputResponse = getOutputResponse(executeMessages);
+        ExecuteCodeResponse outputResponse = getOutputResponse(executeMessages, executeCodeRequest);
 
         // 文件清理
         boolean b = deleteFile(userCodeFile);
@@ -98,7 +98,8 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                 JudgeInfo judgeInfo = new JudgeInfo();
                 judgeInfo.setTime(time);
                 judgeInfo.setMessage(JudgeInfoMessageEnum.COMPILE_ERROR.getValue());
-                throw new ExecuteException(judgeInfo, executeMessage.getErrorMessage());
+                String message = executeMessage.getErrorMessage().replace(userCodeFile.getAbsolutePath(), "");
+                throw new ExecuteException(judgeInfo, message);
             }
             return executeMessage;
         } catch (IOException e) {
@@ -163,9 +164,10 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
      * 整理搜集输出结果
      *
      * @param executeMessageList
+     * @param executeCodeRequest
      * @return
      */
-    public ExecuteCodeResponse getOutputResponse(List<ExecuteMessage> executeMessageList) {
+    public ExecuteCodeResponse getOutputResponse(List<ExecuteMessage> executeMessageList, ExecuteCodeRequest executeCodeRequest) {
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
         List<String> outputList = new ArrayList<>();
         Long maxTime = 0L;
@@ -180,6 +182,13 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             if (executeMessage.getTime() != null) {
                 maxTime = Math.max(maxTime, executeMessage.getTime());
             }
+        }
+        // 运行超时
+        if (maxTime > executeCodeRequest.getTimeLimit()) {
+            JudgeInfo judgeInfo = new JudgeInfo();
+            judgeInfo.setMessage(JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED.getValue());
+            judgeInfo.setTime(maxTime);
+            throw new ExecuteException(judgeInfo, judgeInfo.getMessage());
         }
         // 正常运行
         if (outputList.size() == executeMessageList.size()) {
