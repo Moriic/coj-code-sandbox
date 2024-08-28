@@ -96,7 +96,6 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             if (executeMessage.getExitValue() != 0) {
                 Long time = executeMessage.getTime();
                 JudgeInfo judgeInfo = new JudgeInfo();
-                judgeInfo.setTime(time);
                 judgeInfo.setMessage(JudgeInfoMessageEnum.COMPILE_ERROR.getValue());
                 String message = executeMessage.getErrorMessage().replace(userCodeFile.getAbsolutePath(), "");
                 throw new ExecuteException(judgeInfo, message);
