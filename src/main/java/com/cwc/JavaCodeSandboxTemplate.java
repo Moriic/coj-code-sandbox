@@ -3,6 +3,7 @@ package com.cwc;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+
 import com.cwc.exception.ExecuteException;
 import com.cwc.exception.JudgeInfoMessageEnum;
 import com.cwc.model.ExecuteCodeRequest;
@@ -10,6 +11,7 @@ import com.cwc.model.ExecuteCodeResponse;
 import com.cwc.model.ExecuteMessage;
 import com.cwc.model.JudgeInfo;
 import com.cwc.utils.ProcessUtils;
+
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -20,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 
 @Slf4j
 public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
@@ -33,8 +34,8 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
-//        System.setSecurityManager(new DefaultSecurityManager());
-//        System.setSecurityManager(new DenySecurityManager());
+        //        System.setSecurityManager(new DefaultSecurityManager());
+        //        System.setSecurityManager(new DenySecurityManager());
 
         List<String> inputList = executeCodeRequest.getInputList();
         String code = executeCodeRequest.getCode();
@@ -44,13 +45,13 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
         File userCodeFile = saveCodeToFile(code);
 
         // 编译代码，得到class文件
-        ExecuteMessage compileFileExecuteMessage = compileFile(userCodeFile);
+        compileFile(userCodeFile);
 
         // 执行代码,得到输出
         List<ExecuteMessage> executeMessages = runFile(userCodeFile, inputList);
 
         // 搜集输出
-        ExecuteCodeResponse outputResponse = getOutputResponse(executeMessages, executeCodeRequest);
+        ExecuteCodeResponse outputResponse = getOutputResponse(executeMessages);
 
         // 文件清理
         boolean b = deleteFile(userCodeFile);
@@ -60,7 +61,6 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
         return outputResponse;
     }
-
 
     /**
      * 代码保存为文件
@@ -88,19 +88,19 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
      * @param userCodeFile
      * @return
      */
-    public ExecuteMessage compileFile(File userCodeFile) {
+    public void compileFile(File userCodeFile) {
         String compileCmd = String.format("javac -encoding utf-8 %s", userCodeFile.getAbsolutePath());
         try {
             Process compileProcess = Runtime.getRuntime().exec(compileCmd);
-            ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("编译", compileProcess);
+            ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("compile", compileProcess);
             if (executeMessage.getExitValue() != 0) {
                 Long time = executeMessage.getTime();
                 JudgeInfo judgeInfo = new JudgeInfo();
+                judgeInfo.setTime(time);
                 judgeInfo.setMessage(JudgeInfoMessageEnum.COMPILE_ERROR.getValue());
                 String message = executeMessage.getErrorMessage().replace(userCodeFile.getAbsolutePath(), "");
                 throw new ExecuteException(judgeInfo, message);
             }
-            return executeMessage;
         } catch (IOException e) {
             JudgeInfo judgeInfo = new JudgeInfo();
             judgeInfo.setMessage(JudgeInfoMessageEnum.RUNTIME_ERROR.getValue());
@@ -127,7 +127,8 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                 Process runProcess = Runtime.getRuntime().exec(runCmd);
 
                 // 写入输入数据
-                try (BufferedWriter processInput = new BufferedWriter(new OutputStreamWriter(runProcess.getOutputStream()))) {
+                try (BufferedWriter processInput = new BufferedWriter(
+                    new OutputStreamWriter(runProcess.getOutputStream()))) {
                     processInput.write(inputArgs);
                     processInput.flush();
                 }
@@ -137,18 +138,13 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                     try {
                         Thread.sleep(TIME_OUT);
                         if (runProcess.isAlive()) {
-                            System.out.println("超时了,中断");
                             runProcess.destroy();
                         }
                     } catch (InterruptedException e) {
-                        JudgeInfo judgeInfo = new JudgeInfo();
-                        judgeInfo.setMessage(JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED.getValue());
-                        judgeInfo.setTime(TIME_OUT);
-                        throw new ExecuteException(judgeInfo, JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED.getText());
+                        e.printStackTrace();
                     }
                 }).start();
-
-                ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("运行", runProcess);
+                ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("runCode ", runProcess);
                 executeMessageList.add(executeMessage);
             } catch (IOException e) {
                 JudgeInfo judgeInfo = new JudgeInfo();
@@ -163,15 +159,16 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
      * 整理搜集输出结果
      *
      * @param executeMessageList
-     * @param executeCodeRequest
      * @return
      */
-    public ExecuteCodeResponse getOutputResponse(List<ExecuteMessage> executeMessageList, ExecuteCodeRequest executeCodeRequest) {
+    public ExecuteCodeResponse getOutputResponse(List<ExecuteMessage> executeMessageList) {
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
+        String errorMessage;
         List<String> outputList = new ArrayList<>();
-        Long maxTime = 0L;
+        long maxTime = 0L;
+        long maxMemory = 0L;
         for (ExecuteMessage executeMessage : executeMessageList) {
-            String errorMessage = executeMessage.getErrorMessage();
+            errorMessage = executeMessage.getErrorMessage();
             if (StrUtil.isNotBlank(errorMessage)) {
                 executeCodeResponse.setMessage(errorMessage);
                 executeCodeResponse.setStatus(3);
@@ -181,23 +178,23 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             if (executeMessage.getTime() != null) {
                 maxTime = Math.max(maxTime, executeMessage.getTime());
             }
-        }
-        // 运行超时
-        if (maxTime > executeCodeRequest.getTimeLimit()) {
-            JudgeInfo judgeInfo = new JudgeInfo();
-            judgeInfo.setMessage(JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED.getValue());
-            judgeInfo.setTime(maxTime);
-            throw new ExecuteException(judgeInfo, judgeInfo.getMessage());
-        }
-        // 正常运行
-        if (outputList.size() == executeMessageList.size()) {
-            executeCodeResponse.setStatus(1);
+            if (executeMessage.getMemory() != null) {
+                maxMemory = Math.max(maxMemory, executeMessage.getMemory());
+            }
         }
         executeCodeResponse.setOutputList(outputList);
         JudgeInfo judgeInfo = new JudgeInfo();
         judgeInfo.setTime(maxTime);
+        judgeInfo.setMemory(maxMemory);
         executeCodeResponse.setJudgeInfo(judgeInfo);
-
+        // 正常运行
+        if (outputList.size() == executeMessageList.size()) {
+            executeCodeResponse.setStatus(1);
+        } else {
+            executeCodeResponse.setStatus(3);
+            executeCodeResponse.getJudgeInfo().setMessage(JudgeInfoMessageEnum.RUNTIME_ERROR.getValue());
+        }
+        log.info(executeCodeResponse.toString());
         return executeCodeResponse;
     }
 
@@ -211,7 +208,11 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
         if (userCodeFile.getParentFile() != null) {
             String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
             boolean del = FileUtil.del(userCodeParentPath);
-            System.out.println("删除" + (del ? "成功" : "失败"));
+            if (del) {
+                log.info("delete success !");
+            } else {
+                log.error("delete error !");
+            }
             return del;
         }
         return true;
