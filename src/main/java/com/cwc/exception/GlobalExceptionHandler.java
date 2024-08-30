@@ -1,8 +1,9 @@
 package com.cwc.exception;
 
 import com.cwc.model.ExecuteCodeResponse;
-import com.cwc.model.JudgeInfo;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -17,6 +18,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ExecuteException.class)
     public ExecuteCodeResponse executeExceptionHandler(ExecuteException e) {
+        log.error(e.getMessage());
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
         executeCodeResponse.setOutputList(new ArrayList<>());
         executeCodeResponse.setMessage(e.getMessage());
