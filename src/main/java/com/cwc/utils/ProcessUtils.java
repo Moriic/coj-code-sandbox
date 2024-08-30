@@ -1,10 +1,14 @@
 package com.cwc.utils;
 
 import com.cwc.model.ExecuteMessage;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.StopWatch;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +16,7 @@ import java.util.List;
 /**
  * 进程工具类
  */
+@Slf4j
 public class ProcessUtils {
 
     /**
@@ -31,21 +36,23 @@ public class ProcessUtils {
             executeMessage.setExitValue(exitValue);
             // 正常退出
             if (exitValue == 0) {
-                System.out.println(opName + "成功");
-                // 分批获取进程的正常输出
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(runProcess.getInputStream(), "gbk"));
-                List<String> outputStrList = new ArrayList<>();
-                // 逐行读取
-                String compileOutputLine;
-                while ((compileOutputLine = bufferedReader.readLine()) != null) {
-                    outputStrList.add(compileOutputLine);
+                log.info(opName + " success !");
+                InputStream inputStream = runProcess.getInputStream();
+                StringBuilder sbf = new StringBuilder();
+
+                if (inputStream.available() != 0) {
+                    byte[] inputByte = new byte[inputStream.available()];
+                    while (inputStream.read(inputByte) != -1) {
+                        sbf.append(new String(inputByte));
+                    }
                 }
-                executeMessage.setMessage(StringUtils.join(outputStrList, "\n"));
+                executeMessage.setMessage(sbf.toString().replaceAll("\r\n", "\n"));
             } else {
                 // 异常退出
-                System.out.println(opName + "失败，错误码： " + exitValue);
+                log.error("error, exitValue: " + exitValue);
                 // 分批获取进程的正常输出
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(runProcess.getInputStream(), "gbk"));
+                BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(runProcess.getInputStream(), "gbk"));
                 List<String> outputStrList = new ArrayList<>();
                 // 逐行读取
                 String compileOutputLine;
@@ -55,7 +62,8 @@ public class ProcessUtils {
                 executeMessage.setMessage(StringUtils.join(outputStrList, "\n"));
 
                 // 分批获取进程的错误输出
-                BufferedReader errorBufferedReader = new BufferedReader(new InputStreamReader(runProcess.getErrorStream(),"gbk"));
+                BufferedReader errorBufferedReader = new BufferedReader(
+                    new InputStreamReader(runProcess.getErrorStream(), "gbk"));
                 // 逐行读取
                 List<String> errorOutputStrList = new ArrayList<>();
                 // 逐行读取
