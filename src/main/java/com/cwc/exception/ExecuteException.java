@@ -14,7 +14,6 @@ public class ExecuteException extends RuntimeException {
 
     public ExecuteException(JudgeInfo judgeInfo, String message) {
         super(message);
-        judgeInfo.setMemory(0L);
         this.judgeInfo = judgeInfo;
     }
 }
