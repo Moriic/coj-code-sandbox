@@ -39,6 +39,7 @@ jobs:
         id: docker_build_coj-code-sandbox
         uses: docker/build-push-action@v6.7.0
         with:
+          context: ./
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox
