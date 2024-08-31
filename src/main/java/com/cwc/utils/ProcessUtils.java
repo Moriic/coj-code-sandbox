@@ -36,7 +36,7 @@ public class ProcessUtils {
             executeMessage.setExitValue(exitValue);
             // 正常退出
             if (exitValue == 0) {
-                log.info(opName + " success !");
+                log.info("{} success !", opName);
                 InputStream inputStream = runProcess.getInputStream();
                 StringBuilder sbf = new StringBuilder();
 
@@ -49,7 +49,7 @@ public class ProcessUtils {
                 executeMessage.setMessage(sbf.toString().replaceAll("\r\n", "\n"));
             } else {
                 // 异常退出
-                log.error("error, exitValue: " + exitValue);
+                log.error("error, exitValue: {}", exitValue);
                 // 分批获取进程的正常输出
                 BufferedReader bufferedReader = new BufferedReader(
                     new InputStreamReader(runProcess.getInputStream(), "gbk"));

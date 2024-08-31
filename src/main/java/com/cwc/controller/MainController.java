@@ -1,7 +1,6 @@
 package com.cwc.controller;
 
-import com.cwc.JavaDockerCodeSandbox;
-import com.cwc.JavaNativeCodeSandbox;
+import com.cwc.codesandbox.JavaDockerCodeSandbox;
 import com.cwc.model.ExecuteCodeRequest;
 import com.cwc.model.ExecuteCodeResponse;
 
