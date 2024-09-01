@@ -27,8 +27,9 @@ public class MyResultCallback implements ResultCallback<Statistics> {
     public void onNext(Statistics statistics) {
         Long usage = statistics.getMemoryStats().getUsage();
         if (usage != null) {
-            log.info(String.valueOf(executeMessage.getMemory()));
             executeMessage.setMemory(Math.max(executeMessage.getMemory(), usage));
+            log.info("usage: {}", usage);
+            log.info(String.valueOf(executeMessage.getMemory()));
         }
     }
 
