@@ -130,7 +130,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
             String execId = execCreateCmdResponse.getId();
             // 获取输出
-            ExecStartResultCallback execStartResultCallback = new MyExecStartResultCallback(timeOut, executeMessage);
+            MyExecStartResultCallback execStartResultCallback = new MyExecStartResultCallback(timeOut, executeMessage);
             // 获取占用内存
             StatsCmd statsCmd = dockerClient.statsCmd(containerId);
             ResultCallback<Statistics> resultCallback = new MyResultCallback(maxMemory);
