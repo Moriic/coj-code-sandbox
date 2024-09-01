@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @Slf4j
-@RestController("/")
+@RestController
 public class ExecuteCodeController {
     @Resource
     private CodeSandbox codeSandbox;
