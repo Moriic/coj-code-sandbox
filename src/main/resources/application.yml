@@ -1,4 +1,5 @@
 server:
   port: 8090
 codesandbox:
-  remote-host: "tcp://47.76.180.81:2375"
+  host: "tcp://47.76.180.81:2375"
+  type: "docker"

@@ -4,19 +4,17 @@ import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.util.ArrayUtil;
 import com.cwc.codesandbox.resultcallback.MyExecStartResultCallback;
 import com.cwc.codesandbox.resultcallback.MyResultCallback;
+import com.cwc.config.DockerConfig;
 import com.cwc.model.ExecuteMessage;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
-import com.github.dockerjava.transport.DockerHttpClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -31,60 +29,17 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     private static final long TIME_OUT = 5000;
 
-    public static Boolean FIRST_INIT = true;
-
     public static final String VOLUME_PATH = "/app/tmpCode";
 
+    @Resource
     private DockerClient dockerClient;
-
-    @Value("${codesandbox.remote-host:tcp://47.76.180.81:2375}")
-    private String remoteHost;
 
     @Override
     public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList) {
         // 当前路径
         String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
-        // 设置配置
-        DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(remoteHost)
-                .build();
-        // 配置 httpClient
-        DockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
-                .dockerHost(config.getDockerHost())
-                .sslConfig(config.getSSLConfig())
-                .maxConnections(3000)
-                .build();
-        // 连接 docker
-        dockerClient = DockerClientImpl.getInstance(config, dockerHttpClient);
-        log.info("connect {} dockerClient success ", remoteHost);
-
-        // 拉取镜像
-        String image = "openjdk:8-alpine";
-        if (FIRST_INIT) {
-            PullImageCmd pullImageCmd = dockerClient.pullImageCmd(image);
-            PullImageResultCallback pullImageResultCallback = new PullImageResultCallback() {
-                @Override
-                public void onNext(PullResponseItem item) {
-                    log.info("download images: {}", item.getStatus());
-                    super.onNext(item);
-                }
-
-                @Override
-                public void onComplete() {
-                    FIRST_INIT = false;
-                    log.info("download success!");
-                    super.onComplete();
-                }
-            };
-            try {
-                pullImageCmd.exec(pullImageResultCallback).awaitCompletion();
-            } catch (InterruptedException e) {
-                log.info("download error: {}", e.getMessage());
-                throw new RuntimeException(e);
-            }
-        }
-
         // 创建容器
+        String image = "openjdk:8-alpine";
         CreateContainerCmd containerCmd = dockerClient.createContainerCmd(image);
         HostConfig hostConfig = new HostConfig();
         hostConfig.withMemory(100 * 1024 * 1024L);
