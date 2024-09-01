@@ -33,7 +33,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     public static Boolean FIRST_INIT = true;
 
-    public static final String VOLUME_PATH = "/code";
+    public static final String VOLUME_PATH = "/app/tmpCode";
 
     private DockerClient dockerClient;
 
@@ -91,7 +91,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         hostConfig.withMemorySwap(0L);
         hostConfig.withCpuCount(1L);
         // hostConfig.withSecurityOpts(Arrays.asList("seccomp=安全你管理配置JSON字符串"));
-        hostConfig.setBinds(new Bind(userCodeParentPath, new Volume(VOLUME_PATH)));
+        hostConfig.setBinds(new Bind("code_volume", new Volume(VOLUME_PATH)));
 
         CreateContainerResponse createContainerResponse = containerCmd
                 .withHostConfig(hostConfig)
@@ -113,7 +113,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         for (String input : inputList) {
             StopWatch stopWatch = new StopWatch();
             // docker exec [container] java -cp /app Main
-            String[] cmdArray = ArrayUtil.append(new String[]{"java", "-cp", VOLUME_PATH, "Main"});
+            String[] cmdArray = ArrayUtil.append(new String[]{"java", "-cp", userCodeParentPath, "Main"});
             ExecCreateCmdResponse execCreateCmdResponse = dockerClient.execCreateCmd(containerId)
                     .withCmd(cmdArray)
                     .withAttachStdin(true)

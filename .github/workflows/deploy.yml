@@ -51,7 +51,8 @@ jobs:
             docker rm -f coj-code-sandbox
             docker rmi  ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
-            docker run -d --name coj-code-sandbox --network coj_mynetwork -p 8090:8090 ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
+            docker volume create code_volume
+            docker run -d --name coj-code-sandbox --network coj_mynetwork -v code_volume:/app/tmpCode -p 8090:8090 ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
           user: "root"
           host: ${{ secrets.REMOTE_HOST }}
           key: ${{ secrets.PRIVATE_KEY}}
