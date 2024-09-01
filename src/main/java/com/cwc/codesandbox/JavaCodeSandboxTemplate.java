@@ -95,7 +95,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
             ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("compile", compileProcess);
             // Process 编译错误
             if (executeMessage.getExitValue() != 0) {
-                deleteFile(userCodeFile);
+//                deleteFile(userCodeFile);
                 Long time = executeMessage.getTime();
                 JudgeInfo judgeInfo = new JudgeInfo();
                 judgeInfo.setTime(time);
@@ -104,7 +104,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                 throw new ExecuteException(judgeInfo, message);
             }
         } catch (IOException e) {
-            deleteFile(userCodeFile);
+//            deleteFile(userCodeFile);
             JudgeInfo judgeInfo = new JudgeInfo();
             judgeInfo.setMessage(JudgeInfoMessageEnum.RUNTIME_ERROR.getValue());
             throw new ExecuteException(judgeInfo, e.getMessage());
@@ -123,7 +123,6 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
         List<ExecuteMessage> executeMessageList = new ArrayList<>();
         for (String inputArgs : inputList) {
-            StopWatch stopWatch = new StopWatch();
             // -Xmx256m 最大堆空间大小 -Xms 初始堆空间大小
             String runCmd = String.format("java -Dfile.encoding=UTF-8 -cp %s Main", userCodeParentPath);
             try {
@@ -150,7 +149,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
                 ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("runCode ", runProcess);
                 executeMessageList.add(executeMessage);
             } catch (IOException e) {
-                deleteFile(userCodeFile);
+//                deleteFile(userCodeFile);
                 JudgeInfo judgeInfo = new JudgeInfo();
                 judgeInfo.setMessage(JudgeInfoMessageEnum.RUNTIME_ERROR.getValue());
                 throw new ExecuteException(judgeInfo, e.getMessage());
