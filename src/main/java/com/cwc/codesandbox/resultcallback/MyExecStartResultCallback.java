@@ -5,22 +5,15 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.StreamType;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class MyExecStartResultCallback extends ExecStartResultCallback {
-    private final boolean[] timeout;
 
     private final ExecuteMessage executeMessage;
 
-    public MyExecStartResultCallback(boolean[] timeout, ExecuteMessage executeMessage) {
-        this.timeout = timeout;
+    public MyExecStartResultCallback(ExecuteMessage executeMessage) {
         this.executeMessage = executeMessage;
-    }
-
-    @Override
-    public void onComplete() {
-        timeout[0] = false;
-        super.onComplete();
     }
 
     @Override
@@ -31,8 +24,11 @@ public class MyExecStartResultCallback extends ExecStartResultCallback {
             log.error("onNext error : {}", new String(item.getPayload()));
             executeMessage.setErrorMessage(new String(item.getPayload()));
         } else {
-            log.info("onNext success : {}", new String(item.getPayload()));
-            executeMessage.setMessage(new String(item.getPayload()));
+            String output = new String(item.getPayload());
+            if (StringUtils.isNotBlank(output)) {
+                log.info("onNext success : {}", output);
+                executeMessage.setMessage(output);
+            }
         }
 
     }

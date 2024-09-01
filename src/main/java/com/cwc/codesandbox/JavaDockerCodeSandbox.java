@@ -4,14 +4,15 @@ import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.util.ArrayUtil;
 import com.cwc.codesandbox.resultcallback.MyExecStartResultCallback;
 import com.cwc.codesandbox.resultcallback.MyResultCallback;
-import com.cwc.config.DockerConfig;
 import com.cwc.model.ExecuteMessage;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.*;
-import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Statistics;
+import com.github.dockerjava.api.model.Volume;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -21,6 +22,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -80,11 +82,10 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
             ExecuteMessage executeMessage = new ExecuteMessage();
             long time = 0;
             final long[] maxMemory = {0};
-            final boolean[] timeOut = {true};
 
             String execId = execCreateCmdResponse.getId();
             // 获取输出
-            MyExecStartResultCallback execStartResultCallback = new MyExecStartResultCallback(timeOut, executeMessage);
+            MyExecStartResultCallback execStartResultCallback = new MyExecStartResultCallback(executeMessage);
             // 获取占用内存
             StatsCmd statsCmd = dockerClient.statsCmd(containerId);
             ResultCallback<Statistics> resultCallback = new MyResultCallback(maxMemory);
@@ -112,11 +113,16 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
             executeMessage.setMemory(maxMemory[0]);
             executeMessageList.add(executeMessage);
         }
-        // 删除容器
-        boolean destroyStatus = destroyContainer(containerId);
-        if (!destroyStatus) {
-            log.error("delete container error!");
-        }
+        // 异步删除容器
+        CompletableFuture.runAsync(() -> {
+                    // 删除容器
+                    boolean destroyStatus = destroyContainer(containerId);
+                    if (!destroyStatus) {
+                        log.error("delete container error!");
+                    }
+                }
+        );
+
         log.info("run success: {}", executeMessageList);
         return executeMessageList;
     }
