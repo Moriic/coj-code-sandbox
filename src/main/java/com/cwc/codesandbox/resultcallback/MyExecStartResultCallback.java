@@ -5,6 +5,7 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.StreamType;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class MyExecStartResultCallback extends ExecStartResultCallback {
@@ -23,9 +24,11 @@ public class MyExecStartResultCallback extends ExecStartResultCallback {
         if (streamType.equals(StreamType.STDERR)) {
             log.error("onNext error : {}", payload);
             executeMessage.setErrorMessage(payload);
-        } else {
-            log.info("onNext success : {}", payload);
-            executeMessage.setMessage(executeMessage.getMessage() + payload);
+        } else if (streamType.equals(StreamType.STDOUT)) {
+            if (StringUtils.isNotEmpty(payload)) {
+                log.info("onNext success : {}", payload);
+                executeMessage.setMessage(executeMessage.getMessage() + payload);
+            }
         }
 
     }
