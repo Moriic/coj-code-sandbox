@@ -88,7 +88,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
             MyExecStartResultCallback execStartResultCallback = new MyExecStartResultCallback(executeMessage);
             // 获取占用内存
             StatsCmd statsCmd = dockerClient.statsCmd(containerId);
-            ResultCallback<Statistics> resultCallback = new MyResultCallback(maxMemory);
+            ResultCallback<Statistics> resultCallback = new MyResultCallback(executeMessage);
             statsCmd.exec(resultCallback);
 
             // 创建输入流
@@ -110,7 +110,8 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
             }
             // 正常结束
             executeMessage.setTime(time);
-            executeMessage.setMemory(maxMemory[0]);
+//            executeMessage.setMemory(maxMemory[0]);
+            log.info(executeMessage.toString());
             executeMessageList.add(executeMessage);
         }
         // 异步删除容器

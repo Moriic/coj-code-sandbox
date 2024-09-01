@@ -1,15 +1,16 @@
 package com.cwc.codesandbox.resultcallback;
 
+import com.cwc.model.ExecuteMessage;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.Statistics;
 
 import java.io.Closeable;
 
 public class MyResultCallback implements ResultCallback<Statistics> {
-    private final long[] maxUse;
+    private ExecuteMessage executeMessage;
 
-    public MyResultCallback(long[] maxUse) {
-        this.maxUse = maxUse;
+    public MyResultCallback(ExecuteMessage executeMessage) {
+        this.executeMessage = executeMessage;
     }
 
     @Override
@@ -22,9 +23,9 @@ public class MyResultCallback implements ResultCallback<Statistics> {
      */
     @Override
     public void onNext(Statistics statistics) {
-        Long maxUsage = statistics.getMemoryStats().getMaxUsage();
-        if (maxUsage != null) {
-            maxUse[0] = Math.max(maxUse[0], maxUsage);
+        Long usage = statistics.getMemoryStats().getUsage();
+        if (usage != null) {
+            executeMessage.setMemory(Math.max(executeMessage.getMemory(), usage));
         }
     }
 
