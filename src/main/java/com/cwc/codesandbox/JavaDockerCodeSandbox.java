@@ -32,7 +32,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     private static final long TIME_OUT = 5000;
 
-    public static final Boolean FIRST_INIT = true;
+    public static Boolean FIRST_INIT = true;
 
     public static final String VOLUME_PATH = "/app";
 
@@ -49,6 +49,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerHost(remoteHost)
                 .build();
+        // 配置 httpClient
         DockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
                 .sslConfig(config.getSSLConfig())
@@ -71,6 +72,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
                 @Override
                 public void onComplete() {
+                    FIRST_INIT = false;
                     log.info("download success!");
                     super.onComplete();
                 }
@@ -92,7 +94,8 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
         // hostConfig.withSecurityOpts(Arrays.asList("seccomp=安全你管理配置JSON字符串"));
         hostConfig.setBinds(new Bind(userCodeParentPath, new Volume(VOLUME_PATH)));
 
-        CreateContainerResponse createContainerResponse = containerCmd.withHostConfig(hostConfig)
+        CreateContainerResponse createContainerResponse = containerCmd
+                .withHostConfig(hostConfig)
                 .withAttachStdin(true)     // 开启输入输出流
                 .withAttachStderr(true)
                 .withAttachStdout(true)
@@ -107,6 +110,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
         // 执行命令并获取输出
         List<ExecuteMessage> executeMessageList = new ArrayList<>();
+        log.info("run code with inputList: {}", inputList.toString());
         for (String input : inputList) {
             StopWatch stopWatch = new StopWatch();
             // docker exec [container] java -cp /app Main
