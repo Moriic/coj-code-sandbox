@@ -48,10 +48,10 @@ jobs:
         uses: fifsky/ssh-action@master
         with:
           command: |
-            docker rm -f coj-code-sanbox
+            docker rm -f coj-code-sandbox
             docker rmi  ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
-            docker run -d --name coj-code-sanbox --network coj_mynetwork -p 8090:8090 ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
+            docker run -d --name coj-code-sandbox --network coj_mynetwork -p 8090:8090 ${{ secrets.DOCKER_HUB_USERNAME }}/coj-code-sandbox:latest
           user: "root"
           host: ${{ secrets.REMOTE_HOST }}
           key: ${{ secrets.PRIVATE_KEY}}
