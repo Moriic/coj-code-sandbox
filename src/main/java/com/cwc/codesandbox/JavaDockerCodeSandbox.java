@@ -10,11 +10,12 @@ import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.*;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import com.github.dockerjava.transport.DockerHttpClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -37,18 +38,25 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     private DockerClient dockerClient;
 
+    @Value("${codesandbox.remote-host:tcp://47.76.180.81:2375}")
+    private String remoteHost;
+
     @Override
     public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList) {
         // 当前路径
         String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
         // 设置配置
-        DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
-        DockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost())
+        DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
+                .withDockerHost(remoteHost)
+                .build();
+        DockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost(config.getDockerHost())
                 .sslConfig(config.getSSLConfig())
                 .maxConnections(3000)
                 .build();
-        // 创建容器，把文件复制到容器中
-        dockerClient = DockerClientBuilder.getInstance(config).withDockerHttpClient(dockerHttpClient).build();
+        // 连接 docker
+        dockerClient = DockerClientImpl.getInstance(config, dockerHttpClient);
+        log.info("connect {} dockerClient success ", remoteHost);
 
         // 拉取镜像
         String image = "openjdk:8-alpine";

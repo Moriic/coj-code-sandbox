@@ -3,7 +3,6 @@ package com.cwc.codesandbox;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-
 import com.cwc.exception.ExecuteException;
 import com.cwc.exception.JudgeInfoMessageEnum;
 import com.cwc.model.ExecuteCodeRequest;
@@ -11,7 +10,6 @@ import com.cwc.model.ExecuteCodeResponse;
 import com.cwc.model.ExecuteMessage;
 import com.cwc.model.JudgeInfo;
 import com.cwc.utils.ProcessUtils;
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -79,6 +77,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
         String userCodeParentPath = globalCodePathName + File.separator + UUID.randomUUID();
         String userCodePath = userCodeParentPath + File.separator + GLOBAL_JAVA_CLASS_NAME;
         File userCodeFile = FileUtil.writeString(code, userCodePath, StandardCharsets.UTF_8);
+        log.info("saveCodeToFile success, userCodeFilePath = {}", userCodeFile.getAbsolutePath());
         return userCodeFile;
     }
 
@@ -91,8 +90,10 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
     public void compileFile(File userCodeFile) {
         String compileCmd = String.format("javac -encoding utf-8 %s", userCodeFile.getAbsolutePath());
         try {
+            // Process 进行编译
             Process compileProcess = Runtime.getRuntime().exec(compileCmd);
             ExecuteMessage executeMessage = ProcessUtils.runProcessAndGetMessage("compile", compileProcess);
+            // Process 编译错误
             if (executeMessage.getExitValue() != 0) {
                 Long time = executeMessage.getTime();
                 JudgeInfo judgeInfo = new JudgeInfo();
@@ -128,7 +129,7 @@ public abstract class JavaCodeSandboxTemplate implements CodeSandbox {
 
                 // 写入输入数据
                 try (BufferedWriter processInput = new BufferedWriter(
-                    new OutputStreamWriter(runProcess.getOutputStream()))) {
+                        new OutputStreamWriter(runProcess.getOutputStream()))) {
                     processInput.write(inputArgs);
                     processInput.flush();
                 }
