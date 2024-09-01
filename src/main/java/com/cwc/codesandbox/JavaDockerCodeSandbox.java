@@ -33,7 +33,7 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
 
     public static Boolean FIRST_INIT = true;
 
-    public static final String VOLUME_PATH = "/app";
+    public static final String VOLUME_PATH = "/code";
 
     private DockerClient dockerClient;
 
@@ -44,7 +44,6 @@ public class JavaDockerCodeSandbox extends JavaCodeSandboxTemplate {
     public List<ExecuteMessage> runFile(File userCodeFile, List<String> inputList) {
         // 当前路径
         String userCodeParentPath = userCodeFile.getParentFile().getAbsolutePath();
-        log.info("userCodeParentPath: {}", userCodeParentPath);
         // 设置配置
         DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerHost(remoteHost)
