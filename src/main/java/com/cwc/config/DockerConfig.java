@@ -20,8 +20,8 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 public class DockerConfig {
-    @Value("${codesandbox.host}")
-    private String sandboxHost;
+//    @Value("${codesandbox.host}")
+//    private String sandboxHost;
 
     /**
      * 初始化 DockerClient实例
@@ -30,7 +30,7 @@ public class DockerConfig {
     public DockerClient getDockerInstance() {
         // 设置配置
         DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(sandboxHost)
+//                .withDockerHost(sandboxHost)
                 .build();
         // 配置 httpClient
         DockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
